@@ -1,0 +1,21 @@
+name = "moon-dashboard"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+
+# Custom domain: moon.460001.xyz
+[[routes]]
+pattern = "moon.460001.xyz"
+custom_domain = true
+
+# KV namespace for caching API responses
+[[kv_namespaces]]
+binding = "CACHE_KV"
+id = "17d70e1fc9fb495c8db45d6db0a2bc32"
+
+# Disable Workers Logs (personal use, lower noise)
+[observability]
+enabled = false
+
+# Static assets (frontend HTML)
+[assets]
+directory = "./public"

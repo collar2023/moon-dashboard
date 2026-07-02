@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>惠东双月湾 · 天气仪表盘</title>
+<!-- 引入更具设计感的 Google 字体 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=Outfit:wght@200;300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-deep: #08111e;
+    --bg-mid: #0f223c;
+    --gold: #f4a261;
+    --sea: #4cc9f0;
+    --mint: #06d6a0;
+    --rain: #ffb703;
+    --ink: #faf7f0;
+    --ink-dim: #99aabf;
+    --line: rgba(255, 255, 255, 0.06);
+    --line-glow: rgba(76, 201, 240, 0.15);
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    /* 渐变优化为更深邃、有光晕感的径向渐变，契合双月湾的夜空/深海氛围 */
+    background: radial-gradient(circle at 50% 0%, var(--bg-mid) 0%, var(--bg-deep) 80%);
+    background-attachment: fixed;
+    color: var(--ink);
+    font-family: 'Outfit', -apple-system, "PingFang SC", "Noto Serif SC", serif;
+    line-height: 1.6;
+    min-height: 100vh;
+    padding: 36px 20px 100px;
+  }
+  .header {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+  h1 {
+    margin: 0 0 8px;
+    font-size: 26px;
+    letter-spacing: 8px;
+    color: var(--gold);
+    font-weight: 300;
+    font-family: 'Lora', "Noto Serif SC", serif;
+    text-shadow: 0 0 15px rgba(244, 162, 97, 0.2);
+  }
+  .sub {
+    color: var(--ink-dim);
+    font-size: 13px;
+    letter-spacing: 3px;
+    font-style: italic;
+  }
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+  @media (min-width: 720px) {
+    .grid { grid-template-columns: 1fr 1fr; }
+    .span-2 { grid-column: 1 / -1; }
+  }
+  /* 移动端/小屏适配 (以电脑端为核心设计，防止在手机端发生字体换行或容器溢出) */
+  @media (max-width: 600px) {
+    body {
+      padding: 20px 12px 80px;
+    }
+    h1 {
+      font-size: 20px;
+      letter-spacing: 4px;
+      margin-bottom: 6px;
+    }
+    .sub {
+      font-size: 11px;
+      letter-spacing: 1px;
+    }
+    .grid {
+      gap: 14px;
+    }
+    .card {
+      padding: 16px 18px;
+      border-radius: 10px;
+    }
+    .big {
+      font-size: 36px;
+      margin: 2px 0 8px;
+    }
+    .row {
+      padding: 6px 0;
+      font-size: 13px;
+    }
+    .verdict {
+      padding: 4px 12px;
+      font-size: 12px;
+    }
+    .hour {
+      flex: 0 0 68px;
+      padding: 10px 4px;
+    }
+    .hour .t {
+      font-size: 14px;
+    }
+    .toolbar {
+      bottom: 16px;
+      right: 16px;
+      padding: 6px 12px;
+    }
+    .toolbar button {
+      padding: 4px 12px;
+      font-size: 11px;
+    }
+  }
+  /* 卡片玻璃拟态升级，倒角更大更圆润，并添加轻微的上边框高亮 */
+  .card {
+    background: rgba(15, 34, 60, 0.45);
+    border: 1px solid var(--line);
+    border-top: 3px solid var(--sea);
+    padding: 22px 24px;
+    border-radius: 12px;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    transition: all 0.35s cubic-bezier(0.25, 0.8, 0.25, 1);
+    min-width: 0; /* 防止子元素横向滚动撑开网格容器导致整体溢出 */
+  }
+  /* 卡片浮动与发光交互动效 */
+  .card:hover {
+    transform: translateY(-4px);
+    border-color: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 12px 40px 0 var(--line-glow);
+  }
+  .card.gold { border-top-color: var(--gold); }
+  .card.mint { border-top-color: var(--mint); }
+  .card.rain { border-top-color: var(--rain); }
+  
+  .card h2 {
+    margin: 0 0 12px;
+    font-size: 13px;
+    letter-spacing: 3px;
+    color: var(--ink-dim);
+    font-weight: 500;
+    text-transform: uppercase;
+  }
+  .big {
+    font-size: 46px;
+    font-weight: 200;
+    letter-spacing: 1px;
+    color: var(--ink);
+    margin: 4px 0 12px;
+    font-family: 'Lora', 'Outfit', serif;
+  }
+  .row {
+    display: flex;
+    justify-content: space-between;
+    padding: 8px 0;
+    font-size: 14px;
+    border-bottom: 1px dashed var(--line);
+    transition: background 0.2s ease;
+  }
+  .row:hover {
+    background: rgba(255, 255, 255, 0.01);
+  }
+  .row:last-child { border-bottom: none; }
+  .row .k { color: var(--ink-dim); }
+  .row .v { color: var(--ink); font-variant-numeric: tabular-nums; font-weight: 500; }
+  
+  /* 下海指数徽章样式升级，加宽渐变并带有呼吸发光 */
+  .verdict {
+    display: inline-block;
+    padding: 6px 16px;
+    border-radius: 30px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 1px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+  }
+  .verdict.good { 
+    background: linear-gradient(135deg, var(--mint), #00f5b4); 
+    color: #050d18; 
+    box-shadow: 0 0 15px rgba(6, 214, 160, 0.45);
+  }
+  .verdict.ok { 
+    background: linear-gradient(135deg, var(--rain), var(--gold)); 
+    color: #050d18; 
+    box-shadow: 0 0 15px rgba(255, 183, 3, 0.35);
+  }
+  .verdict.bad { 
+    background: linear-gradient(135deg, #ff6b6b, #e63946); 
+    color: white; 
+    box-shadow: 0 0 15px rgba(230, 57, 70, 0.45);
+  }
+
+  .toolbar {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    background: rgba(8, 17, 30, 0.6);
+    padding: 8px 16px;
+    border-radius: 50px;
+    border: 1px solid var(--line);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  .toolbar button {
+    background: rgba(255,255,255,0.08);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    padding: 6px 16px;
+    font-size: 12px;
+    letter-spacing: 2px;
+    cursor: pointer;
+    border-radius: 20px;
+    font-family: inherit;
+    transition: all 0.25s ease;
+  }
+  .toolbar button:hover { 
+    background: var(--sea); 
+    color: #08111e; 
+    border-color: var(--sea);
+    box-shadow: 0 0 12px rgba(76, 201, 240, 0.4);
+  }
+  
+  /* 滚动条美化 */
+  .hourly {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    padding: 8px 0;
+    width: 100%;
+    max-width: 100%;
+  }
+  .hourly::-webkit-scrollbar {
+    height: 6px;
+  }
+  .hourly::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.02);
+    border-radius: 8px;
+  }
+  .hourly::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+  }
+  .hourly::-webkit-scrollbar-thumb:hover {
+    background: var(--sea);
+  }
+
+  .hour {
+    flex: 0 0 76px;
+    text-align: center;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid var(--line);
+    padding: 12px 6px;
+    border-radius: 8px;
+    transition: all 0.25s ease;
+  }
+  .hour:hover {
+    background: rgba(255,255,255,0.06);
+    border-color: rgba(255,255,255,0.12);
+  }
+  .hour .h { font-size: 11px; color: var(--ink-dim); }
+  .hour .t { font-size: 15px; margin: 6px 0; font-variant-numeric: tabular-nums; font-weight: 500; }
+  .hour .ico { font-size: 22px; }
+  .hour .r { font-size: 10px; color: var(--sea); }
+  
+  .err {
+    color: #ff6b6b;
+    font-size: 12px;
+    margin-top: 8px;
+    word-break: break-all;
+    background: rgba(255, 107, 107, 0.08);
+    padding: 6px 10px;
+    border-radius: 4px;
+    border-left: 2px solid #ff6b6b;
+  }
+  .ts { color: var(--ink-dim); font-size: 11px; font-style: italic; }
+
+  /* 异地天气对比板块样式 */
+  .compare-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 16px;
+    margin-top: 10px;
+  }
+  @media (min-width: 800px) {
+    .compare-grid {
+      grid-template-columns: repeat(4, 1fr);
+    }
+  }
+  @media (min-width: 480px) and (max-width: 799px) {
+    .compare-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+  .compare-item {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--line);
+    padding: 16px;
+    border-radius: 8px;
+    text-align: center;
+    transition: all 0.3s ease;
+  }
+  .compare-item:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--sea);
+  }
+  .compare-item .name {
+    font-size: 16px;
+    font-weight: 500;
+    color: var(--gold);
+    margin-bottom: 4px;
+    font-family: 'Lora', serif;
+  }
+  .compare-item .coords {
+    font-size: 11px;
+    color: var(--ink-dim);
+    margin-bottom: 12px;
+  }
+  .compare-item .weather-big {
+    font-size: 32px;
+    font-weight: 200;
+    margin: 8px 0;
+    font-family: 'Outfit', sans-serif;
+    color: var(--ink);
+  }
+  .compare-item .details {
+    display: flex;
+    justify-content: space-around;
+    font-size: 12px;
+    color: var(--ink-dim);
+    border-top: 1px dashed var(--line);
+    padding-top: 8px;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+<div class="header">
+  <h1>惠东双月湾 · 天气仪表盘</h1>
+  <div class="sub" id="loc-coords">22.60°N · 114.90°E</div>
+</div>
+
+<div class="grid">
+
+  <div class="card">
+    <h2>当前 · Open-Meteo</h2>
+    <div class="big" id="w-temp">--°</div>
+    <div class="row"><span class="k">风速</span><span class="v" id="w-wind">--</span></div>
+    <div class="row"><span class="k">阵风</span><span class="v" id="w-gust">--</span></div>
+    <div class="row"><span class="k">湿度</span><span class="v" id="w-hum">--</span></div>
+    <div class="row"><span class="k">气压</span><span class="v" id="w-pres">--</span></div>
+    <div class="row"><span class="k">云量</span><span class="v" id="w-cloud">--</span></div>
+    <div class="row"><span class="k">浪高</span><span class="v" id="w-wave">--</span></div>
+    <div class="row"><span class="k">风浪</span><span class="v" id="w-ww">--</span></div>
+    <div class="row"><span class="k">涌浪 1</span><span class="v" id="w-swell">--</span></div>
+    <div id="w-err" class="err" style="display:none;"></div>
+  </div>
+
+  <div class="card gold">
+    <h2>当前 · OpenWeatherMap</h2>
+    <div class="big" id="o-temp">--°</div>
+    <div class="row"><span class="k">体感</span><span class="v" id="o-feel">--</span></div>
+    <div class="row"><span class="k">天气</span><span class="v" id="o-desc">--</span></div>
+    <div class="row"><span class="k">湿度</span><span class="v" id="o-hum">--</span></div>
+    <div class="row"><span class="k">风速</span><span class="v" id="o-wind">--</span></div>
+    <div class="row"><span class="k">能见度</span><span class="v" id="o-vis">--</span></div>
+    <div id="o-err" class="err" style="display:none;"></div>
+  </div>
+
+  <div class="card mint">
+    <h2>日出日落</h2>
+    <div class="row"><span class="k">日出</span><span class="v" id="sun-rise">--:--</span></div>
+    <div class="row"><span class="k">日落</span><span class="v" id="sun-set">--:--</span></div>
+    <div class="row"><span class="k">民用曙光</span><span class="v" id="sun-civil">--</span></div>
+    <div class="row"><span class="k">天文曙光</span><span class="v" id="sun-astro">--</span></div>
+    <div class="row"><span class="k">日照时长</span><span class="v" id="sun-dur">--</span></div>
+    <div id="sun-err" class="err" style="display:none;"></div>
+  </div>
+
+  <div class="card rain">
+    <h2>今天 · 水上户外指数</h2>
+    
+    <div class="row" style="padding: 10px 0; border-bottom: 1px solid var(--line);">
+      <span class="k" style="font-size: 15px; font-weight: 500;">🏊 游泳下海</span>
+      <span class="v"><span class="verdict" id="v-swim">--</span></span>
+    </div>
+    <div class="row" style="padding: 10px 0; border-bottom: 1px solid var(--line);">
+      <span class="k" style="font-size: 15px; font-weight: 500;">🤿 浮潜观光</span>
+      <span class="v"><span class="verdict" id="v-snorkeling">--</span></span>
+    </div>
+    <div class="row" style="padding: 10px 0; border-bottom: 1px solid var(--line);">
+      <span class="k" style="font-size: 15px; font-weight: 500;">🎣 户外海钓</span>
+      <span class="v"><span class="verdict" id="v-fishing">--</span></span>
+    </div>
+    
+    <div style="margin-top: 15px; padding-top: 8px;">
+      <div class="row"><span class="k">实时浪高</span><span class="v" id="v-wave">--</span></div>
+      <div class="row"><span class="k">实时风速</span><span class="v" id="v-wind">--</span></div>
+      <div class="row"><span class="k">当前气温</span><span class="v" id="v-temp">--</span></div>
+    </div>
+  </div>
+
+  <div class="card span-2">
+    <h2>未来 5 天 · 每 3 小时 · OWM</h2>
+    <div class="hourly" id="hourly">加载中...</div>
+  </div>
+
+  <div class="card span-2">
+    <h2>异地天气对比</h2>
+    <div class="compare-grid" id="compare-container">
+      <div style="text-align: center; color: var(--ink-dim);">加载中...</div>
+    </div>
+  </div>
+</div>
+
+<div class="toolbar">
+  <span class="ts" id="ts"></span>
+  <button onclick="loadAll()">刷新</button>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const fmtTime = (iso) => {
+  if (!iso) return "--:--";
+  const d = new Date(iso);
+  return d.toLocaleTimeString("zh-CN", { hour: "2-digit", minute: "2-digit", hour12: false });
+};
+const num = (v, d = 1) => (v == null || isNaN(v)) ? "--" : Number(v).toFixed(d);
+
+async function loadAll() {
+  $("ts").textContent = "加载中...";
+  try {
+    const r = await fetch("/api/now");
+    const d = await r.json();
+    renderNow(d);
+  } catch (e) {
+    $("ts").textContent = "错误: " + e.message;
+  }
+  try {
+    const r = await fetch("/api/forecast?type=hourly");
+    const d = await r.json();
+    renderHourly(d);
+  } catch (e) {
+    $("hourly").innerHTML = '<div class="err">'+e.message+'</div>';
+  }
+  $("ts").textContent = "更新于 " + new Date().toLocaleTimeString("zh-CN");
+}
+
+function renderNow(d) {
+  // --- 动态位置更新 ---
+  if (d.location) {
+    $("loc-coords").textContent = num(d.location.lat, 2) + "°N · " + num(d.location.lon, 2) + "°E";
+  }
+
+  // --- Open-Meteo ---
+  const w = d.windy;
+  const wErrEl = $("w-err");
+  if (w && !w.error) {
+    const f = (arr, d) => (Array.isArray(arr) && arr.length) ? num(arr[0], d) : "--";
+    $("w-temp").textContent = f(w.temp, 1) + "°";
+    $("w-wind").textContent = f(w.wind, 1) + " m/s";
+    $("w-gust").textContent = f(w.windGust, 1) + " m/s";
+    $("w-hum").textContent = f(w.humidity, 0) + " %";
+    $("w-pres").textContent = f(w.pressure, 0) + " hPa";
+    $("w-cloud").textContent = f(w.cloud, 0) + " %";
+    $("w-wave").textContent = f(w.waveHeight, 2) + " m";
+    $("w-ww").textContent = f(w.windWaveHeight, 2) + " m";
+    $("w-swell").textContent = f(w.swell1Height, 2) + " m";
+    
+    if (w.atmError || w.waveError) {
+      wErrEl.style.display = "block";
+      wErrEl.textContent = "部分数据缺失: " + (w.atmError || "") + " " + (w.waveError || "");
+    } else {
+      wErrEl.style.display = "none";
+    }
+  } else {
+    wErrEl.style.display = "block";
+    wErrEl.textContent = "Open-Meteo: " + (w && w.error || "暂无数据");
+  }
+
+  // --- OWM ---
+  const o = d.owm;
+  const oErrEl = $("o-err");
+  if (o && !o.error && o.current) {
+    const c = o.current;
+    $("o-temp").textContent = num(c.main?.temp, 1) + "°";
+    $("o-feel").textContent = num(c.main?.feels_like, 1) + "°";
+    $("o-desc").textContent = c.weather?.[0]?.description || "--";
+    $("o-hum").textContent = num(c.main?.humidity, 0) + " %";
+    $("o-wind").textContent = num(c.wind?.speed, 1) + " m/s";
+    $("o-vis").textContent = c.visibility != null ? (c.visibility/1000).toFixed(1) + " km" : "--";
+    oErrEl.style.display = "none";
+  } else {
+    oErrEl.style.display = "block";
+    oErrEl.textContent = "OWM: " + (o && o.error || "暂无数据");
+  }
+
+  // --- Sun ---
+  const s = d.sun;
+  const sErrEl = $("sun-err");
+  if (s && !s.error) {
+    $("sun-rise").textContent = fmtTime(s.sunrise);
+    $("sun-set").textContent = fmtTime(s.sunset);
+    $("sun-civil").textContent = fmtTime(s.civil_twilight_begin) + " / " + fmtTime(s.civil_twilight_end);
+    $("sun-astro").textContent = fmtTime(s.astronomical_twilight_begin) + " / " + fmtTime(s.astronomical_twilight_end);
+    const dl = s.day_length || 0;
+    const h = Math.floor(dl/3600), m = Math.floor((dl%3600)/60);
+    $("sun-dur").textContent = h + "h " + m + "m";
+    sErrEl.style.display = "none";
+  } else {
+    sErrEl.style.display = "block";
+    sErrEl.textContent = "Sun: " + (s && s.error || "暂无数据");
+  }
+
+  // --- Verdict ---
+  if (w && Array.isArray(w.waveHeight) && w.waveHeight.length > 0 && w.waveHeight[0] !== null &&
+      Array.isArray(w.wind) && w.wind.length > 0 && w.wind[0] !== null &&
+      Array.isArray(w.temp) && w.temp.length > 0 && w.temp[0] !== null) {
+      
+    const wave = w.waveHeight[0];
+    const wind = w.wind[0];
+    const temp = w.temp[0];
+    const precip = (w.precip && w.precip[0] !== null) ? w.precip[0] : 0;
+    
+    $("v-wave").textContent = wave.toFixed(2) + " m";
+    $("v-wind").textContent = wind.toFixed(1) + " m/s";
+    $("v-temp").textContent = temp.toFixed(1) + "°";
+    
+    // 1. 游泳判定
+    let swimLabel = "🏊 尚可 / 注意安全", swimCls = "ok";
+    if (wave > 1.2 || wind > 8 || temp < 18 || precip > 1.0) {
+      swimCls = "bad";
+      if (wave > 1.2) swimLabel = "🪨 风急浪高";
+      else if (wind > 8) swimLabel = "💨 风力强劲";
+      else if (precip > 1.0) swimLabel = "🌧️ 阴雨雷暴";
+      else if (temp < 18) swimLabel = "❄️ 气温寒冷";
+    } else if (wave < 0.6 && wind < 5 && precip === 0 && temp >= 23 && temp <= 34) {
+      swimLabel = "🌊 完美下海";
+      swimCls = "good";
+    }
+    const vs = $("v-swim"); vs.textContent = swimLabel; vs.className = "verdict " + swimCls;
+    
+    // 2. 浮潜判定
+    let snorkelLabel = "🤿 尚可 / 水质一般", snorkelCls = "ok";
+    if (wave > 0.8 || wind > 7 || temp < 20 || precip > 0.5) {
+      snorkelCls = "bad";
+      if (wave > 0.8) snorkelLabel = "🪨 水下浑浊";
+      else if (wind > 7) snorkelLabel = "💨 浪涌流急";
+      else if (precip > 0.5) snorkelLabel = "🌧️ 雨天视线差";
+      else if (temp < 20) snorkelLabel = "❄️ 水温偏低";
+    } else if (wave < 0.4 && wind < 4.5 && precip === 0 && temp >= 24 && (w.cloud && w.cloud[0] !== null ? w.cloud[0] < 60 : true)) {
+      snorkelLabel = "✨ 水清沙幼";
+      snorkelCls = "good";
+    }
+    const vn = $("v-snorkeling"); vn.textContent = snorkelLabel; vn.className = "verdict " + snorkelCls;
+    
+    // 3. 海钓判定
+    let fishLabel = "🎣 尚可 / 适宜海钓", fishCls = "ok";
+    if (wave > 1.4 || wind > 9 || precip > 3.0 || temp < 12 || temp > 35) {
+      fishCls = "bad";
+      if (wave > 1.4) fishLabel = "⚠️ 大浪危险";
+      else if (wind > 9) fishLabel = "💨 强风难抛投";
+      else if (precip > 3.0) fishLabel = "🌧️ 暴雨雷电";
+      else if (temp < 12) fishLabel = "❄️ 气温过低";
+      else if (temp > 35) fishLabel = "☀️ 酷暑不咬钩";
+    } else if (wave >= 0.3 && wave <= 0.9 && wind >= 2.0 && wind <= 6.5 && precip < 1.0 && temp >= 18 && temp <= 29) {
+      fishLabel = "🐟 爆护狂咬";
+      fishCls = "good";
+    }
+    const vf = $("v-fishing"); vf.textContent = fishLabel; vf.className = "verdict " + fishCls;
+  } else {
+    $("v-swim").textContent = "--"; $("v-swim").className = "verdict";
+    $("v-snorkeling").textContent = "--"; $("v-snorkeling").className = "verdict";
+    $("v-fishing").textContent = "--"; $("v-fishing").className = "verdict";
+    $("v-wave").textContent = "--";
+    $("v-wind").textContent = "--";
+    $("v-temp").textContent = "--";
+  }
+  
+  // --- 异地天气对比渲染 ---
+  if (Array.isArray(d.compare)) {
+    $("compare-container").innerHTML = d.compare.map(item => {
+      const tempStr = item.temp != null ? `${num(item.temp, 1)}°C` : "--°C";
+      const humStr = item.humidity != null ? `${num(item.humidity, 0)}%` : "--%";
+      return `
+        <div class="compare-item">
+          <div class="name">${item.name}</div>
+          <div class="coords">${item.coords}</div>
+          <div class="weather-big">${tempStr}</div>
+          <div class="details">
+            <span>☁️ ${item.weather}</span>
+            <span>💧 湿度 ${humStr}</span>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+}
+
+const ICON_MAP = {
+  "01d":"☀️","01n":"🌙","02d":"🌤","02n":"☁️",
+  "03d":"☁️","03n":"☁️","04d":"☁️","04n":"☁️",
+  "09d":"🌧","09n":"🌧","10d":"🌦","10n":"🌧",
+  "11d":"⛈","11n":"⛈","13d":"❄️","13n":"❄️",
+  "50d":"🌫","50n":"🌫"
+};
+
+function renderHourly(d) {
+  if (!d || !d.hourly || !d.hourly.length) {
+    $("hourly").innerHTML = '<div class="err">无数据</div>'; return;
+  }
+  $("hourly").innerHTML = d.hourly.slice(0, 24).map(h => {
+    const t = new Date(h.dt * 1000);
+    const label = (t.getMonth()+1) + "/" + t.getDate() + " " + t.getHours().toString().padStart(2,"0") + ":00";
+    const ico = h.weather?.[0]?.icon || "";
+    return `<div class="hour">
+      <div class="h">${label}</div>
+      <div class="ico">${ICON_MAP[ico] || "·"}</div>
+      <div class="t">${num(h.temp,0)}°</div>
+      <div class="r">💧 ${(h.pop*100).toFixed(0)}%</div>
+    </div>`;
+  }).join("");
+}
+
+loadAll();
+setInterval(loadAll, 5 * 60 * 1000);
+</script>
+</body>
+</html>
