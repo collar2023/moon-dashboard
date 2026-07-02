@@ -22,13 +22,11 @@ jobs:
           node-version: '20'
           cache: 'npm'
 
-      # ── 1. JS 语法检查（零依赖，直接用 node） ──────────────────────
+      # ── 1. JS 语法检查（零依赖，纯解析不执行） ────────────────────
       - name: 🔍 JS 语法检查
         run: |
           echo "检查 src/ 下所有 .js 文件语法..."
-          find src -name "*.js" | while read f; do
-            node --input-type=module < "$f" 2>&1 || { echo "❌ 语法错误: $f"; exit 1; }
-          done
+          find src -name "*.js" -print0 | xargs -0 -I{} node --check "{}"
           echo "✅ 语法检查通过"
 
       # ── 2. ESLint ─────────────────────────────────────────────────
