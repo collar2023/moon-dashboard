@@ -1,0 +1,15 @@
+{
+  "name": "moon-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "惠东双月湾天气仪表盘 - Cloudflare Worker",
+  "scripts": {
+    "lint": "eslint src/",
+    "lint:check": "eslint src/ --max-warnings 0"
+  },
+  "devDependencies": {
+    "eslint": "^9.0.0",
+    "globals": "^15.0.0"
+  }
+}
